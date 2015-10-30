@@ -1,31 +1,44 @@
 require "simple_aspect/version"
 
 module SimpleAspect
+  require 'thread'
+
   def self.extended(base)
     base.instance_variable_set(
-      '@_watcher_aspects', {}
+      '@_sa_watcher_aspects', {}
+    )
+    base.instance_variable_set(
+      '@_sa_ignoring_methods', false
+    )
+    base.instance_variable_set(
+      '@_sa_lock', Mutex.new
     )
   end
 
   def aspect_around(method, &block)
-    @_watcher_aspects[method] ||= Hash.new({})
-    @_watcher_aspects[method][:around_callback] = block
+    @_sa_watcher_aspects[method] = block
   end
 
   def method_added(method)
-    aspect = @_watcher_aspects.fetch(method, false)
-    if aspect
-      unless aspect.fetch(:processed, false)
-        orig_implementation = instance_method(method)
-        aspect[:processed] = true
+    aspect = @_sa_watcher_aspects[method]
 
-        around_callback = aspect[:around_callback]
-        define_method(method) do |*args, &block|
-          result = nil
-          around_callback.call(*args) do
-             result = orig_implementation.bind(self).call(*args, &block)
+    if aspect && !@_sa_ignoring_methods
+      @_sa_lock.synchronize do
+        begin
+          @_sa_ignoring_methods = true
+
+          orig_impl = instance_method(method)
+          around_callback = aspect
+
+          define_method(method) do |*args, &block|
+            result = nil
+            around_callback.call(*args) do
+               result = orig_impl.bind(self).call(*args, &block)
+            end
+            result
           end
-          result
+        ensure
+          @_sa_ignoring_methods = false
         end
       end
     end
