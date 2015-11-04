@@ -22,24 +22,28 @@ module SimpleAspect
   def method_added(method)
     aspect = @_sa_watcher_aspects[method]
 
-    if aspect && !@_sa_ignoring_methods
-      @_sa_lock.synchronize do
-        begin
-          @_sa_ignoring_methods = true
+    return if @_sa_ignoring_methods || !aspect
 
-          orig_impl = instance_method(method)
-          around_callback = aspect
+    @_sa_lock.synchronize do
+      begin
+        @_sa_ignoring_methods = true
 
-          define_method(method) do |*args, &block|
-            result = nil
-            around_callback.call(*args) do
-               result = orig_impl.bind(self).call(*args, &block)
-            end
-            result
-          end
-        ensure
-          @_sa_ignoring_methods = false
+        orig_impl = instance_method(method)
+        around_callback = aspect
+
+        define_method(method) do |*args, &block|
+          result = nil
+
+          # executing `around_callback` with the instance's binding
+          instance_exec(
+            *args, proc { result = orig_impl.bind(self).call(*args, &block) },
+            &around_callback
+          )
+
+          result
         end
+      ensure
+        @_sa_ignoring_methods = false
       end
     end
   end

@@ -26,10 +26,10 @@ require 'simple_aspect'
 class Worker
   extend SimpleAspect
 
-  aspect_around :perform do |*args, &original|
-    puts "Before: Something #{args}"
+  aspect_around :perform do |*args, original|
+    puts "Before: \"args\" => #{args}"
     result = original.call
-    puts "After: Something #{result} #{args}"
+    puts "After: \"result\" => #{result}, \"args\" => #{args}"
   end
 
   def perform(n1, n2)
@@ -49,4 +49,3 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/ricardotealdi/simple_aspect.
-
