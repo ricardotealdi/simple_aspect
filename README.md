@@ -26,9 +26,9 @@ require 'simple_aspect'
 class Worker
   extend SimpleAspect
 
-  aspect_around :perform do |*args, original|
+  aspect_around :perform do |*args, &original|
     puts "Before: \"args\" => #{args}"
-    result = original.call
+    result = original.call # Don't forget to `call` the original implementation
     puts "After: \"result\" => #{result}, \"args\" => #{args}"
   end
 
@@ -36,6 +36,32 @@ class Worker
     puts 'doing something'
     yield if block_given?
     n1 + n2
+  end
+end
+```
+
+or
+
+```ruby
+require 'simple_aspect'
+
+class Worker
+  extend SimpleAspect
+
+  aspect_around :perform, :around_perform
+
+  def perform(n1, n2)
+    puts 'doing something'
+    yield if block_given?
+    n1 + n2
+  end
+
+  private
+
+  def around_perform(*args)
+    puts "Before: \"args\" => #{args}"
+    result = yield # Don't forget to execute the original implementation
+    puts "After: \"result\" => #{result}, \"args\" => #{args}"
   end
 end
 ```
