@@ -1,5 +1,7 @@
 # SimpleAspect
 
+[![Build Status](https://travis-ci.org/ricardotealdi/simple_aspect.svg?branch=master)](https://travis-ci.org/ricardotealdi/simple_aspect)
+
 Simple AOP implementation for Ruby
 
 ## Installation
