@@ -3,6 +3,7 @@ require 'simple_aspect/version'
 module SimpleAspect
   require 'thread'
 
+  # @api private
   def self.extended(base)
     base.instance_eval do
       @sa_methods_to_aspect_methods_name = {}
@@ -11,6 +12,51 @@ module SimpleAspect
     end
   end
 
+  # Register an aspect method around the target method
+  #
+  # @param method [Symbol] name of the target method
+  # @param instance_around_method_name [Symbol] name of the aspect method. If
+  #   not provided, the definition of the aspect method should be provided with
+  #   a Proc/lambda
+  # @param block [Proc] the definition of the aspect method if its name was not
+  #   provided. This Proc needs to receive two arguments: *orig_args,
+  #   &orig_block
+  #
+  # @example without a defined method
+  #   class Worker
+  #     extend SimpleAspect
+  #
+  #     aspect_around :perform do |*args, &original|
+  #       result = original.call
+  #       log(result)
+  #     end
+  #
+  #     def perform(*args)
+  #       # do_work
+  #     end
+  #
+  #     def log(message)
+  #       # log
+  #     end
+  #   end
+  #
+  # @example with a defined method
+  #
+  #   class Worker
+  #     extend SimpleAspect
+  #
+  #     aspect_around :perform, :log
+  #
+  #     def perform(*args)
+  #       # do_work
+  #     end
+  #
+  #     def log(*args)
+  #       # log *args
+  #       result = yield
+  #       # log result
+  #     end
+  #   end
   def aspect_around(
     method,
     instance_around_method_name = sa_instance_around_method_name(method),
@@ -19,6 +65,7 @@ module SimpleAspect
     sa_register_aspect_on_method(method, instance_around_method_name, &block)
   end
 
+  # @api private
   def method_added(method)
     return if sa_should_not_redefine?(method)
 
